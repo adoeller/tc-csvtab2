@@ -1,8 +1,5 @@
 # csvtab (extended)
 
-![edit](CSV_Edit.png)
-![transform](CSV_Transformation.png)
-
 A [Total Commander](https://www.ghisler.com/) Lister (WLX) plugin to view, **edit** and
 **transform** CSV / TSV / TAB files.
 
@@ -12,6 +9,9 @@ It keeps the original viewing experience and adds in-place editing, a column
 transformation workbench with live preview, an interactive status bar, and a number
 of usability features described below.
 
+
+![edit](CSV_Edit.png)
+![transform](CSV_Transformation.png)
 ---
 
 ## Original features (inherited)
