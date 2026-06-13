@@ -9,10 +9,9 @@ It keeps the original viewing experience and adds in-place editing, a column
 transformation workbench with live preview, an interactive status bar, and a number
 of usability features described below.
 
-
 ![edit](CSV_Edit.png)
+
 ![transform](CSV_Transformation.png)
----
 
 ## Original features (inherited)
 
@@ -160,8 +159,9 @@ Settings live in `csvtab.ini` (rename the bundled sample). A few common options:
 | `header-row` | Treat the first row as a header (0/1) |
 | `filter-row` | Show the per-column filter row (0/1) |
 | `show-line-numbers` | Show the row-number column on the left (0/1) |
+| `decimal-align` | Align decimals per column and right-align integers (0/1, default 1) |
 | `dark-theme` | Use the dark colour set (0/1) |
-| `skip-comments` | Comment handling: 0 parse / 1 keep / 2 hide |
+| `skip-comments` | Comment handling: 0 parse / 1 keep / 2 hide / 3 auto-hide leading comment and blank rows |
 | `default-column-delimiter` | Force a delimiter (empty = auto-detect) |
 | `column-delimiter` | Delimiter used when copying rows (default TAB) |
 | `trim-values` | Trim leading/trailing spaces and tabs (0/1) |
