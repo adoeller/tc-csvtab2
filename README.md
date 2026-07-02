@@ -173,3 +173,4 @@ comments in `csvtab.ini` for the full list.
 Based on [csvtab-wlx](https://github.com/little-brother/csvtab-wlx) by
 *little-brother*. Original project licensed under its respective terms; see
 `LICENSE`.
+
