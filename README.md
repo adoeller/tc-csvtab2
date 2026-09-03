@@ -41,6 +41,8 @@ regular.
 * Optional line-number column sized from the largest visible row number.
 * Alternating row colours, current-cell highlight, dark mode and configurable
   fonts/colours.
+* DPI-aware layout: filter row, status bar, transform sidebar, padding and
+  fonts scale with the active monitor.
 * Header text is bold, column dragging is disabled, and header/filter columns
   stay aligned during horizontal scrolling and column resizing.
 
@@ -208,7 +210,8 @@ Settings live in `csvtab.ini` next to the plugin. A few common options:
 | `filter-row` | Show the per-column filter row (0/1) |
 | `show-line-numbers` | Show the row-number column on the left (0/1) |
 | `decimal-align` | Align mixed integers/floats at the decimal position (0/1, default 1) |
-| `dark-theme` | Use the dark colour set (0/1) |
+| `theme-mode` | `tc` follows Total Commander, `light`/`dark` force a fixed theme |
+| `dark-theme` | Legacy fallback when `theme-mode` is missing (0/1) |
 | `skip-comments` | 0 parse / 1 keep comment as one cell / 2 hide / 3 auto-hide leading comments and blank rows |
 | `default-column-delimiter` | Force a CSV delimiter; empty means auto-detect |
 | `column-delimiter` | Delimiter used when copying rows (default TAB) |
