@@ -3,9 +3,6 @@
 A [Total Commander](https://www.ghisler.com/) Lister (WLX) plugin to view,
 filter, search, **edit** and **transform** CSV / TSV / TAB files.
 
-![edit](CSV_Edit.png)
-![transform](CSV_Transformation.png)
-
 This is an extended native Lazarus/FPC rewrite of the original
 [csvtab-wlx](https://github.com/little-brother/csvtab-wlx) by *little-brother*.
 It keeps the fast Lister workflow, but turns CSV viewing into a compact table
@@ -146,6 +143,7 @@ The grid context menu keeps the everyday actions close to the table:
 | Delete row(s) | Ctrl+X, Edit mode only |
 | Delete column | Edit mode only |
 | Hide column | Ctrl+click header |
+| Adjust all column widths | Ctrl+H |
 | Show all columns | Ctrl+Space |
 | Filters | toggle filter row |
 | Header row | toggle first row as header |
@@ -173,6 +171,7 @@ The grid context menu keeps the everyday actions close to the table:
 | Shift+C | Copy selected row(s) |
 | Ctrl+C | Copy current column, depending on `copy-column` |
 | Ctrl+Space | Show all columns |
+| Ctrl+H | Measure every visible row and adjust all visible columns to their full required width |
 | Ctrl++ / Ctrl+- | Increase / decrease font size |
 | Ctrl+Mouse wheel | Zoom font |
 | Alt+Click | Open URL in a cell |
@@ -205,6 +204,7 @@ Settings live in `csvtab.ini` next to the plugin. A few common options:
 | Key | Meaning |
 |-----|---------|
 | `font` / `font-size` / `font-weight` | Grid font |
+| `language` | `Auto`, `German`, `English`, `Ukrainian` or `Russian`; Auto follows Total Commander's `LanguageIni` |
 | `start-mode` | Start in `default`, `editor` or `transformer` mode |
 | `header-row` | Treat the first row as a header (0/1) |
 | `filter-row` | Show the per-column filter row (0/1) |
@@ -217,12 +217,17 @@ Settings live in `csvtab.ini` next to the plugin. A few common options:
 | `column-delimiter` | Delimiter used when copying rows (default TAB) |
 | `trim-values` | Trim leading/trailing spaces and tabs (0/1) |
 | `max-file-size` | Size limit in bytes (0 = unlimited) |
+| `allColumnsToMaxWidth` | Measure every visible row and use each column's full required width, bypassing automatic width limits (0/1) |
 | `max-column-samples` | Rows sampled for width, used-column and numeric detection |
-| `max-column-width` | Maximum automatic column width |
+| `max-column-width` | Maximum automatic column width; with exactly two columns it limits only the first column |
 | `copy-column` | Ctrl+C copies cell (0) or column (1) |
 | `filter-case-sensitive` | Case-sensitive filtering (0/1) |
 | `disable-num-keys` | Do not forward number keys to Total Commander (0/1) |
 | `disable-np-keys` | Do not forward N/P to Total Commander (0/1) |
+
+GUI translations are UTF-8 files in the `language` directory (`en.lng`,
+`de.lng`, `uk.lng`, and `ru.lng`). Missing files or individual translation
+keys always fall back to English from `en.lng`.
 | `exit-by-q` | Forward Q as close/exit key to Total Commander (0/1) |
 
 All light- and dark-theme colours are configurable as RGB integers; see the
