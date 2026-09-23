@@ -204,7 +204,7 @@ Settings live in `csvtab.ini` next to the plugin. A few common options:
 | Key | Meaning |
 |-----|---------|
 | `font` / `font-size` / `font-weight` | Grid font |
-| `language` | `Auto`, `German`, `English`, `Ukrainian` or `Russian`; Auto follows Total Commander's `LanguageIni` |
+| `language` | Catalog for the GUI: `Auto`, `English`, `German`, `Ukrainian`, `Russian`, `SimplifiedChinese` or `TraditionalChinese`; `Auto` follows Total Commander's `LanguageIni` |
 | `start-mode` | Start in `default`, `editor` or `transformer` mode |
 | `header-row` | Treat the first row as a header (0/1) |
 | `filter-row` | Show the per-column filter row (0/1) |
@@ -224,14 +224,49 @@ Settings live in `csvtab.ini` next to the plugin. A few common options:
 | `filter-case-sensitive` | Case-sensitive filtering (0/1) |
 | `disable-num-keys` | Do not forward number keys to Total Commander (0/1) |
 | `disable-np-keys` | Do not forward N/P to Total Commander (0/1) |
-
-GUI translations are UTF-8 files in the `language` directory (`en.lng`,
-`de.lng`, `uk.lng`, and `ru.lng`). Missing files or individual translation
-keys always fall back to English from `en.lng`.
 | `exit-by-q` | Forward Q as close/exit key to Total Commander (0/1) |
 
 All light- and dark-theme colours are configurable as RGB integers; see the
 comments in `csvtab.ini` for the full list.
+
+---
+
+## Languages
+
+GUI translations are UTF-8 files in the `language` directory next to the plugin
+(`en.lng`, `de.lng`, `uk.lng`, `ru.lng`, `zh-CN.lng`, `zh-TW.lng`). A complete
+English catalog is also compiled into the plugin, so a missing catalog or a
+missing single key always falls back to English instead of showing an internal
+key.
+
+`language = Auto` (the default) reads `LanguageIni` from the `[Configuration]`
+section of Total Commander's `wincmd.ini`, so the plugin starts in the same
+language as Total Commander:
+
+| Total Commander `LanguageIni` | Catalog |
+|-------------------------------|---------|
+| `wcmd_chn.lng` | `zh-CN.lng` (简体中文) |
+| `wcmd_cht.lng`, `wcmd_tw.lng` | `zh-TW.lng` (繁體中文) |
+| `wcmd_deu.lng` | `de.lng` |
+| `wcmd_ukr.lng` | `uk.lng` |
+| `wcmd_rus.lng` | `ru.lng` |
+| anything else | `en.lng` |
+
+The setting also accepts a catalog name or a language code directly, for
+example `language = TraditionalChinese`, `language = zh-TW`, `language = cht`
+or `language = wcmd_tw.lng`.
+
+Adding a new language only needs a new `<code>.lng` file next to the existing
+ones: `language = <code>` loads it even when the name is not in the table
+above. Copy `language/en.lng` as a template and keep the keys and the
+`%d`/`%s` placeholders unchanged. Only automatic detection needs an extra entry
+in `LangNameToId`/`NormalizeLanguageToken` in `src/uLanguage.pas`, which maps a
+Total Commander `LanguageIni` name such as `wcmd_chn.lng` to the catalog.
+
+For CJK text, set a font with CJK coverage in `csvtab.ini`, for example
+`font = Microsoft YaHei UI` (Simplified) or `font = Microsoft JhengHei UI`
+(Traditional); Windows substitutes glyphs automatically otherwise, but a
+matching font gives better metrics for column sizing.
 
 ---
 

@@ -14,8 +14,9 @@ function SearchCsvViewer(Wnd: HWND; const SearchText: UnicodeString;
 
 implementation
 
-uses SysUtils, CommCtrl, CommDlg, ShellApi, uSettings, uCsvModel, uCsvSave,
-  uGridModel, uColumnSample, uUrlTools, uTransform, uDecimalAlign, listplug;
+uses SysUtils, CommCtrl, CommDlg, ShellApi, uSettings, uLanguage, uCsvModel,
+  uCsvSave, uGridModel, uColumnSample, uUrlTools, uTransform, uDecimalAlign,
+  listplug;
 
 const
   CSV_VIEWER_CLASS = 'CsvTabMigrationViewer';
@@ -821,7 +822,7 @@ begin
   Parts[3] := 630;
   Parts[4] := -1;
   SendMessageW(FStatus, SB_SETPARTS, Length(Parts), LPARAM(@Parts[0]));
-  S := ' Loading...';
+  S := ' ' + Lang('Loading');
   SendMessageW(FStatus, SB_SETTEXTW, 0, LPARAM(PWideChar(S)));
   SendMessageW(FStatus, SB_SETTEXTW, 1, 0);
   SendMessageW(FStatus, SB_SETTEXTW, 2, 0);
@@ -850,30 +851,32 @@ begin
   SendMessageW(FStatus, SB_SETTEXTW, 0, LPARAM(PWideChar(S)));
   if Doc.Delimiter = #9 then S := 'TAB'
   else S := String(Doc.Delimiter);
-  if FDelimiterAuto then S := ' Delimiter: Auto (' + S + ')'
-  else S := ' Delimiter: ' + S;
+  if FDelimiterAuto then
+    S := ' ' + Lang('Delimiter') + ': ' + Lang('Auto') + ' (' + S + ')'
+  else
+    S := ' ' + Lang('Delimiter') + ': ' + S;
   SendMessageW(FStatus, SB_SETTEXTW, 1, LPARAM(PWideChar(S)));
   if FCommentsAuto then
-    S := Format(' Comments: auto (%d)', [Doc.HiddenCommentCount])
+    S := ' ' + LangInt('CommentsAuto', [Doc.HiddenCommentCount])
   else
     case FSkipComments of
-      1: S := ' Comments: no parse (0)';
-      2: S := Format(' Comments: hidden (%d)', [Doc.HiddenCommentCount]);
+      1: S := ' ' + Lang('CommentsNoParse');
+      2: S := ' ' + LangInt('CommentsHidden', [Doc.HiddenCommentCount]);
     else
-      S := ' Comments: parse (0)';
+      S := ' ' + Lang('CommentsParse');
     end;
   SendMessageW(FStatus, SB_SETTEXTW, 2, LPARAM(PWideChar(S)));
-  S := Format(' Rows: %d/%d', [FModel.VisibleCount,
+  S := ' ' + LangInt('Rows', [FModel.VisibleCount,
     Doc.RowCount - Ord(ReadSettingInt('header-row', 1) <> 0)]);
   SendMessageW(FStatus, SB_SETTEXTW, 3, LPARAM(PWideChar(S)));
   if (FCurrentRow >= 0) and (FCurrentColumn >= 0) then
     S := Format(' %d:%d', [FCurrentRow + 1, FCurrentColumn + 1])
   else
     S := '';
-  if FEditMode and FDirty then S := S + ' EDIT *'
-  else if FEditMode then S := S + ' EDIT'
-  else if FDirty then S := S + ' MODIFIED *';
-  if FTransformApplied then S := S + ' | TRANSFORM';
+  if FEditMode and FDirty then S := S + ' ' + Lang('Edit') + ' *'
+  else if FEditMode then S := S + ' ' + Lang('Edit')
+  else if FDirty then S := S + ' ' + Lang('Modified') + ' *';
+  if FTransformApplied then S := S + ' | ' + Lang('Transform');
   SendMessageW(FStatus, SB_SETTEXTW, 4, LPARAM(PWideChar(S)));
 end;
 
@@ -951,7 +954,7 @@ begin
   end
   else
   begin
-    MessageBoxW(Wnd, 'The file could not be saved.', 'csvtab',
+    MessageBoxW(Wnd, PWideChar(Lang('FileSaveFailed')), 'csvtab',
       MB_OK or MB_ICONERROR);
     UpdateStatus;
   end;
@@ -969,8 +972,7 @@ begin
     CloseCellEdit(True);
     if IsWindow(FCellEditor) then Exit;
     if not FDirty then Exit(True);
-    MessageText := 'Save changes to "' + ExtractFileName(FileName) +
-      '" before ' + ActionText + '?';
+    MessageText := LangStr('SaveBefore', [ExtractFileName(FileName), ActionText]);
     Choice := MessageBoxW(Wnd, PWideChar(MessageText), 'csvtab',
       MB_YESNO or MB_ICONWARNING or MB_DEFBUTTON1);
     case Choice of
@@ -1171,7 +1173,7 @@ begin
   DataCol := FCurrentColumn - NumberOffset;
   if (DataCol < 0) or (DataCol >= Doc.ColumnCount) then Exit;
   HeaderName := ActiveHeaderText(FCurrentColumn);
-  MessageText := 'Delete column "' + HeaderName + '"?';
+  MessageText := LangStr('DeleteColumnQuestion', [HeaderName]);
   if MessageBoxW(Wnd, PWideChar(MessageText), 'csvtab',
     MB_YESNO or MB_ICONWARNING or MB_DEFBUTTON2) <> IDYES then Exit;
   if not Doc.DeleteColumn(DataCol) then Exit;
@@ -1531,7 +1533,7 @@ begin
   Result := '';
   FillChar(OpenFile, SizeOf(OpenFile), 0);
   FillChar(Buffer, SizeOf(Buffer), 0);
-  FilterText := Filter + #0 + '*.' + Extension + #0 + 'All files' + #0 + '*.*' + #0#0;
+  FilterText := Filter + #0 + '*.' + Extension + #0 + Lang('AllFiles') + #0 + '*.*' + #0#0;
   OpenFile.lStructSize := SizeOf(OpenFile);
   OpenFile.hwndOwner := Owner;
   OpenFile.lpstrFilter := PWideChar(FilterText);
@@ -1610,12 +1612,18 @@ begin
   end;
 end;
 
+// The number format is stored as data, so only the display is translated.
+function NumberFormatLabel(const Value: UnicodeString): UnicodeString;
+begin
+  if Value = 'original' then Result := Lang('Original') else Result := Value;
+end;
+
 procedure TCsvViewer.CreateTransformSidebar;
 const
-  Captions: array[0..13] of PWideChar = ('Up', 'Down', '+ Add column',
-    '- Remove column', '~ Rename column', 'Set all cells', 'Fill empty cells',
-    'Enumerate cells', 'Load transformation (JSON)', 'Save transformation (JSON)',
-    'Delimiter', 'Number format', 'Export CSV', 'Apply to grid');
+  CaptionKeys: array[0..13] of UnicodeString = ('Up', 'Down', 'AddColumn',
+    'RemoveColumn', 'RenameColumn', 'SetAllCells', 'FillEmptyCells',
+    'EnumerateCells', 'LoadTransformation', 'SaveTransformation',
+    'Delimiter', 'NumberFormat', 'ExportCsv', 'ApplyToGrid');
   IDs: array[0..13] of Integer = (IDC_TRANSFORM_UP, IDC_TRANSFORM_DOWN,
     IDC_TRANSFORM_ADD, IDC_TRANSFORM_REMOVE, IDC_TRANSFORM_RENAME,
     IDC_TRANSFORM_CONSTANT, IDC_TRANSFORM_FILL, IDC_TRANSFORM_ENUM,
@@ -1623,20 +1631,25 @@ const
     IDC_TRANSFORM_DELIMITER, IDC_TRANSFORM_NUMBER, IDC_TRANSFORM_EXPORT, IDC_TRANSFORM_APPLY);
 var
   I: Integer;
+  Captions: array[0..13] of UnicodeString;
+  Hint: UnicodeString;
 begin
+  for I := 0 to High(CaptionKeys) do Captions[I] := Lang(CaptionKeys[I]);
   FTransformList := CreateWindowExW(WS_EX_CLIENTEDGE, WC_LISTBOXW, nil,
     WS_CHILD or WS_VSCROLL or LBS_NOTIFY, 0, 0, 0, 0, Wnd,
     IDC_TRANSFORM_LIST, HInstance, nil);
   FTransformInput := CreateWindowExW(WS_EX_CLIENTEDGE, WC_EDITW,
     nil, WS_CHILD or ES_AUTOHSCROLL,
     0, 0, 0, 0, Wnd, IDC_TRANSFORM_INPUT, HInstance, nil);
+  Hint := Lang('TransformInputHint');
   SendMessageW(FTransformInput, $1501 {EM_SETCUEBANNER}, 0,
-    LPARAM(PWideChar('Value / name / enumeration start:stop')));
+    LPARAM(PWideChar(Hint)));
   SetLength(FTransformButtons, Length(IDs));
   for I := 0 to High(IDs) do
   begin
-    FTransformButtons[I] := CreateWindowExW(0, WC_BUTTONW, Captions[I],
-      WS_CHILD or BS_OWNERDRAW, 0, 0, 0, 0, Wnd, IDs[I], HInstance, nil);
+    FTransformButtons[I] := CreateWindowExW(0, WC_BUTTONW,
+      PWideChar(Captions[I]), WS_CHILD or BS_OWNERDRAW, 0, 0, 0, 0, Wnd,
+      IDs[I], HInstance, nil);
     SubclassChild(FTransformButtons[I]);
   end;
   SubclassChild(FTransformList);
@@ -1667,14 +1680,14 @@ begin
   if Selection >= 0 then SendMessageW(FTransformList, LB_SETCURSEL, Selection, 0);
   if Length(FTransformButtons) >= 14 then
   begin
-    S := 'Delimiter: ' + FTransform.ExportDelimiter;
+    S := Lang('Delimiter') + ': ' + FTransform.ExportDelimiter;
     SetWindowTextW(FTransformButtons[10], PWideChar(S));
-    S := 'Number format: ' + FTransform.NumberFormat;
+    S := Lang('NumberFormat') + ': ' + NumberFormatLabel(FTransform.NumberFormat);
     SetWindowTextW(FTransformButtons[11], PWideChar(S));
     if FTransformApplied then
-      SetWindowTextW(FTransformButtons[13], 'Reset grid view')
+      SetWindowTextW(FTransformButtons[13], PWideChar(Lang('ResetGridView')))
     else
-      SetWindowTextW(FTransformButtons[13], 'Apply to grid');
+      SetWindowTextW(FTransformButtons[13], PWideChar(Lang('ApplyToGrid')));
     InvalidateRect(FTransformButtons[10], nil, True);
     InvalidateRect(FTransformButtons[11], nil, True);
     InvalidateRect(FTransformButtons[13], nil, True);
@@ -1720,14 +1733,14 @@ begin
       begin
         FileName := SelectTransformFile(Wnd, False, 'JSON configuration', 'json');
         if (FileName <> '') and not FTransform.LoadJson(FileName) then
-          MessageBoxW(Wnd, 'Could not load transformation JSON.', 'csvtab',
+          MessageBoxW(Wnd, PWideChar(Lang('LoadTransformationFailed')), 'csvtab',
             MB_OK or MB_ICONERROR);
       end;
     IDC_TRANSFORM_SAVE:
       begin
         FileName := SelectTransformFile(Wnd, True, 'JSON configuration', 'json');
         if (FileName <> '') and not FTransform.SaveJson(FileName) then
-          MessageBoxW(Wnd, 'Could not save transformation JSON.', 'csvtab',
+          MessageBoxW(Wnd, PWideChar(Lang('SaveTransformationFailed')), 'csvtab',
             MB_OK or MB_ICONERROR);
       end;
     IDC_TRANSFORM_EXPORT:
@@ -1735,7 +1748,7 @@ begin
         FileName := SelectTransformFile(Wnd, True, 'CSV file', 'csv');
         if (FileName <> '') and not FTransform.ExportCsv(FileName, Doc,
           ReadSettingInt('header-row', 1) <> 0) then
-          MessageBoxW(Wnd, 'Could not export transformed CSV.', 'csvtab',
+          MessageBoxW(Wnd, PWideChar(Lang('ExportTransformationFailed')), 'csvtab',
             MB_OK or MB_ICONERROR);
       end;
     IDC_TRANSFORM_DELIMITER:
@@ -1778,23 +1791,25 @@ end;
 procedure TCsvViewer.CreateGridMenu;
 begin
   FGridMenu := CreatePopupMenu;
-  AppendMenuW(FGridMenu, MF_STRING, IDM_COPY_CELL, 'Copy cell');
-  AppendMenuW(FGridMenu, MF_STRING, IDM_COPY_ROWS, 'Copy row(s) (Shift+C)');
-  AppendMenuW(FGridMenu, MF_STRING, IDM_COPY_COLUMN, 'Copy column (Ctrl+C)');
-  AppendMenuW(FGridMenu, MF_STRING, IDM_INSERT_ROW_BELOW, 'Insert row below');
-  AppendMenuW(FGridMenu, MF_STRING, IDM_DELETE_ROW, 'Delete row(s) (Ctrl+X)');
-  AppendMenuW(FGridMenu, MF_STRING, IDM_DELETE_COLUMN, 'Delete column');
+  AppendMenuW(FGridMenu, MF_STRING, IDM_COPY_CELL, PWideChar(Lang('CopyCell')));
+  AppendMenuW(FGridMenu, MF_STRING, IDM_COPY_ROWS, PWideChar(Lang('CopyRows')));
+  AppendMenuW(FGridMenu, MF_STRING, IDM_COPY_COLUMN, PWideChar(Lang('CopyColumn')));
+  AppendMenuW(FGridMenu, MF_STRING, IDM_INSERT_ROW_BELOW, PWideChar(Lang('InsertRowBelow')));
+  AppendMenuW(FGridMenu, MF_STRING, IDM_DELETE_ROW, PWideChar(Lang('DeleteRows')));
+  AppendMenuW(FGridMenu, MF_STRING, IDM_DELETE_COLUMN, PWideChar(Lang('DeleteColumn')));
   AppendMenuW(FGridMenu, MF_SEPARATOR, 0, nil);
-  AppendMenuW(FGridMenu, MF_STRING, IDM_HIDE_COLUMN, 'Hide column (Ctrl+Click)');
-  AppendMenuW(FGridMenu, MF_STRING, IDM_SHOW_COLUMNS, 'Show all columns (Ctrl+Space)');
+  AppendMenuW(FGridMenu, MF_STRING, IDM_HIDE_COLUMN, PWideChar(Lang('HideColumn')));
+  AppendMenuW(FGridMenu, MF_STRING, IDM_SHOW_COLUMNS, PWideChar(Lang('ShowAllColumns')));
   AppendMenuW(FGridMenu, MF_SEPARATOR, 0, nil);
-  AppendMenuW(FGridMenu, MF_STRING, IDM_FILTER_ROW, 'Filters');
-  AppendMenuW(FGridMenu, MF_STRING, IDM_HEADER_ROW, 'Header row');
-  AppendMenuW(FGridMenu, MF_STRING, IDM_EDIT_MODE, 'Edit mode (Ctrl+E)');
-  AppendMenuW(FGridMenu, MF_STRING, IDM_TRANSFORM_MODE, 'Transform mode (Ctrl+T)');
-  AppendMenuW(FGridMenu, MF_STRING, IDM_SAVE, 'Save (Ctrl+S)');
+  AppendMenuW(FGridMenu, MF_STRING, IDM_FILTER_ROW, PWideChar(Lang('Filters')));
+  AppendMenuW(FGridMenu, MF_STRING, IDM_HEADER_ROW, PWideChar(Lang('HeaderRow')));
+  AppendMenuW(FGridMenu, MF_STRING, IDM_EDIT_MODE, PWideChar(Lang('EditMode')));
+  AppendMenuW(FGridMenu, MF_STRING, IDM_TRANSFORM_MODE, PWideChar(Lang('TransformMode')));
+  AppendMenuW(FGridMenu, MF_STRING, IDM_SAVE, PWideChar(Lang('Save')));
   AppendMenuW(FGridMenu, MF_SEPARATOR, 0, nil);
-  AppendMenuW(FGridMenu, MF_STRING, IDM_LINE_NUMBERS, 'Show line numbers');
+  AppendMenuW(FGridMenu, MF_STRING, IDM_LINE_NUMBERS, PWideChar(Lang('ShowLineNumbers')));
+  // This source snapshot still has the single dark-theme toggle; the catalogs
+  // have no key for it, so the label stays as it is.
   AppendMenuW(FGridMenu, MF_STRING, IDM_DARK_THEME, 'Dark theme');
 end;
 
@@ -1914,7 +1929,7 @@ begin
   AppendMenuW(FEncodingMenu, MF_STRING, IDM_ENCODING_UTF16BE, 'UTF-16BE');
 
   FDelimiterMenu := CreatePopupMenu;
-  AppendMenuW(FDelimiterMenu, MF_STRING, IDM_DELIMITER_AUTO, 'Auto');
+  AppendMenuW(FDelimiterMenu, MF_STRING, IDM_DELIMITER_AUTO, PWideChar(Lang('Auto')));
   AppendMenuW(FDelimiterMenu, MF_STRING, IDM_DELIMITER_COMMA, ',');
   AppendMenuW(FDelimiterMenu, MF_STRING, IDM_DELIMITER_SEMICOLON, ';');
   AppendMenuW(FDelimiterMenu, MF_STRING, IDM_DELIMITER_VBAR, '|');
@@ -1922,10 +1937,10 @@ begin
   AppendMenuW(FDelimiterMenu, MF_STRING, IDM_DELIMITER_COLON, ':');
 
   FCommentMenu := CreatePopupMenu;
-  AppendMenuW(FCommentMenu, MF_STRING, IDM_COMMENTS_AUTO, 'Auto');
-  AppendMenuW(FCommentMenu, MF_STRING, IDM_COMMENTS_PARSE, 'Parse normally');
-  AppendMenuW(FCommentMenu, MF_STRING, IDM_COMMENTS_NOPARSE, 'Do not parse');
-  AppendMenuW(FCommentMenu, MF_STRING, IDM_COMMENTS_HIDE, 'Hide');
+  AppendMenuW(FCommentMenu, MF_STRING, IDM_COMMENTS_AUTO, PWideChar(Lang('Auto')));
+  AppendMenuW(FCommentMenu, MF_STRING, IDM_COMMENTS_PARSE, PWideChar(Lang('ParseNormally')));
+  AppendMenuW(FCommentMenu, MF_STRING, IDM_COMMENTS_NOPARSE, PWideChar(Lang('DoNotParse')));
+  AppendMenuW(FCommentMenu, MF_STRING, IDM_COMMENTS_HIDE, PWideChar(Lang('Hide')));
 end;
 
 function TCsvViewer.ReloadDocument: Boolean;
@@ -1936,7 +1951,7 @@ var
   ReloadDelimiter: WideChar;
 begin
   Result := False;
-  if not ConfirmChanges('reloading') then Exit;
+  if not ConfirmChanges(Lang('Reloading')) then Exit;
   if IsWindow(Wnd) then KillTimer(Wnd, IDT_VALUE_DECODE);
   LineNumberWidth := 0;
   if FShowLineNumbers and IsWindow(FGrid) then
@@ -2062,7 +2077,7 @@ begin
     FDelimiterAuto := OldDelimiterAuto;
     FSkipComments := OldSkipComments;
     FCommentsAuto := OldCommentsAuto;
-    ShowCsvLoadError(Wnd, 'The file could not be reloaded.');
+    ShowCsvLoadError(Wnd, Lang('FileReloadFailed'));
   end
   else if (Command = IDM_COMMENTS_AUTO) or (Command = IDM_COMMENTS_PARSE) or
     (Command = IDM_COMMENTS_NOPARSE) or (Command = IDM_COMMENTS_HIDE) then
@@ -2456,7 +2471,7 @@ begin
     Delimiter, FSkipComments, Doc, ReadSettingInt('trim-values', 1) <> 0,
     ReadSettingInt('max-column-samples', 1000)) then
   begin
-    ShowCsvLoadError(Wnd, 'The file could not be loaded.');
+    ShowCsvLoadError(Wnd, Lang('FileLoadFailed'));
     DestroyWindow(Wnd);
     Exit;
   end;
@@ -2472,7 +2487,7 @@ begin
     FModel := nil;
     Doc.Free;
     Doc := nil;
-    ShowCsvLoadError(Wnd, 'The file could not be loaded.');
+    ShowCsvLoadError(Wnd, Lang('FileLoadFailed'));
     DestroyWindow(Wnd);
     Exit;
   end;
@@ -2931,7 +2946,7 @@ begin
     WM_CLOSE:
       if Assigned(V) then
       begin
-        if V.ConfirmChanges('closing') then DestroyWindow(Wnd);
+        if V.ConfirmChanges(Lang('Closing')) then DestroyWindow(Wnd);
         Exit(0);
       end;
     WM_NCDESTROY:
@@ -2970,6 +2985,8 @@ var
   ParentRect: TRect;
 begin
   Result := 0;
+  // Pick the GUI catalog before any caption is created.
+  LangLoadDefault;
   V := TCsvViewer.Create;
   V.FileName := FileName;
   V.FTakeInitialFocus := IsSeparateListerMode(ParentWin, ShowFlags);
@@ -3002,9 +3019,9 @@ begin
     Exit;
   end;
   SetWindowLongPtrW(V.Wnd, GWLP_USERDATA, PtrInt(V));
-  V.FLoading := CreateWindowExW(0, 'STATIC', 'Loading...', WS_CHILD or
-    WS_VISIBLE or SS_CENTER or SS_CENTERIMAGE, 0, 0, 100, 100, V.Wnd,
-    IDC_LOADING, HInstance, nil);
+  V.FLoading := CreateWindowExW(0, 'STATIC', PWideChar(Lang('Loading')),
+    WS_CHILD or WS_VISIBLE or SS_CENTER or SS_CENTERIMAGE, 0, 0, 100, 100,
+    V.Wnd, IDC_LOADING, HInstance, nil);
   V.FGrid := CreateWindowExW(0, WC_LISTVIEWW, nil, WS_CHILD or
     WS_TABSTOP or LVS_REPORT or LVS_SHOWSELALWAYS or LVS_OWNERDATA, 0, 0,
     100, 100, V.Wnd, IDC_GRID, HInstance, nil);
@@ -3069,7 +3086,7 @@ var
 begin
   if not IsWindow(Wnd) then Exit;
   V := ViewerFromWnd(Wnd);
-  if not Assigned(V) or V.ConfirmChanges('closing') then DestroyWindow(Wnd);
+  if not Assigned(V) or V.ConfirmChanges(Lang('Closing')) then DestroyWindow(Wnd);
 end;
 
 function SearchCsvViewer(Wnd: HWND; const SearchText: UnicodeString;

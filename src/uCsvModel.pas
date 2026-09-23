@@ -80,6 +80,8 @@ function LastCsvLoadError: UnicodeString;
 
 implementation
 
+uses uLanguage;
+
 var
   GLastLoadError: UnicodeString;
 
@@ -943,9 +945,9 @@ begin
     try
       if (MaxSize > 0) and (F.Size > MaxSize) then
       begin
-        GLastLoadError := 'The file could not be loaded because it exceeds the configured size limit.' +
-          #13#10 + 'File size: ' + FormatBytes(F.Size) +
-          #13#10 + 'Limit: ' + FormatBytes(MaxSize);
+        GLastLoadError := Lang('FileTooLarge') +
+          #13#10 + Lang('FileSize') + ': ' + FormatBytes(F.Size) +
+          #13#10 + Lang('Limit') + ': ' + FormatBytes(MaxSize);
         Exit;
       end;
       SetLength(B, F.Size);

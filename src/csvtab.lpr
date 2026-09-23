@@ -8,6 +8,7 @@ uses
   plugin_main in 'plugin_main.pas',
   listplug in 'listplug.pas',
   uSettings in 'uSettings.pas',
+  uLanguage in 'uLanguage.pas',
   uCsvModel in 'uCsvModel.pas',
   uCsvSave in 'uCsvSave.pas',
   uUrlTools in 'uUrlTools.pas',

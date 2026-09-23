@@ -40,7 +40,7 @@ type
 
 implementation
 
-uses uNaturalSort;
+uses uNaturalSort, uLanguage;
 
 constructor TCsvGridModel.Create(ADocument: TCsvDocument; AHeaderRow: Boolean);
 begin
@@ -69,7 +69,7 @@ begin
     Result := SourceCellText(0, Column)
   else
     Result := '';
-  if Result = '' then Result := UnicodeString(Format('Column %d', [Column + 1]));
+  if Result = '' then Result := LangInt('Column', [Column + 1]);
 end;
 
 function TCsvGridModel.MatchesFilter(const Value, Filter: UnicodeString): Boolean;

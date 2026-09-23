@@ -11,6 +11,9 @@ type
 
 procedure SetDefaultIniName(const AName: AnsiString);
 function IniPath: UnicodeString;
+// Reads a text file as UnicodeString, accepting UTF-8 (with or without BOM) and
+// falling back to the active ANSI code page. Also used for the language files.
+function LoadTextFile(const Path: UnicodeString): UnicodeString;
 function ReadSetting(const Name, Default: UnicodeString): UnicodeString;
 function ReadSettingInt(const Name: UnicodeString; Default: Integer): Integer;
 function ReadStartMode: TStartMode;
@@ -60,12 +63,12 @@ begin
   Result := True;
 end;
 
-function LoadIniText(const Path: UnicodeString): UnicodeString;
+function LoadTextFile(const Path: UnicodeString): UnicodeString;
 var
   F: TFileStream;
   B: TBytes;
   A: AnsiString;
-  Start, Count: Integer;
+  Start, Count, I: Integer;
 begin
   Result := '';
   if not FileExists(Path) then Exit;
@@ -75,6 +78,25 @@ begin
     if F.Size > 0 then F.ReadBuffer(B[0], F.Size);
   finally
     F.Free;
+  end;
+  if Length(B) = 0 then Exit;
+  // UTF-16, as written by WritePrivateProfileStringW: Total Commander's own
+  // wincmd.ini is UTF-16LE with a BOM.
+  if (Length(B) >= 2) and (B[0] = $FF) and (B[1] = $FE) then
+  begin
+    Count := (Length(B) - 2) div 2;
+    SetLength(Result, Count);
+    if Count > 0 then
+      Move(B[2], PWideChar(Result)^, Count * SizeOf(WideChar));
+    Exit;
+  end;
+  if (Length(B) >= 2) and (B[0] = $FE) and (B[1] = $FF) then
+  begin
+    Count := (Length(B) - 2) div 2;
+    SetLength(Result, Count);
+    for I := 0 to Count - 1 do
+      Result[I + 1] := WideChar((B[2 + I * 2] shl 8) or B[3 + I * 2]);
+    Exit;
   end;
   Start := 0;
   if (Length(B) >= 3) and (B[0] = $EF) and (B[1] = $BB) and (B[2] = $BF) then
@@ -87,7 +109,6 @@ begin
       A := '';
     Exit(UTF8Decode(A));
   end;
-  if Length(B) = 0 then Exit;
   SetString(A, PAnsiChar(@B[0]), Length(B));
   Count := MultiByteToWideChar(CP_ACP, 0, PAnsiChar(A), Length(A), nil, 0);
   SetLength(Result, Count);
@@ -136,7 +157,7 @@ begin
   Result := Default;
   Lines := TStringList.Create;
   try
-    Lines.Text := UTF8Encode(LoadIniText(IniPath));
+    Lines.Text := UTF8Encode(LoadTextFile(IniPath));
     Section := '';
     for I := 0 to Lines.Count - 1 do
     begin
