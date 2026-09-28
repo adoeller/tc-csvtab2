@@ -204,7 +204,7 @@ Settings live in `csvtab.ini` next to the plugin. A few common options:
 | Key | Meaning |
 |-----|---------|
 | `font` / `font-size` / `font-weight` | Grid font |
-| `language` | `Auto`, `German`, `English`, `Ukrainian` or `Russian`; Auto follows Total Commander's `LanguageIni` |
+| `language` | `Auto` or a language code such as `en`, `de`, `cs`, or `fr`; legacy language names remain supported |
 | `start-mode` | Start in `default`, `editor` or `transformer` mode |
 | `header-row` | Treat the first row as a header (0/1) |
 | `filter-row` | Show the per-column filter row (0/1) |
@@ -225,9 +225,15 @@ Settings live in `csvtab.ini` next to the plugin. A few common options:
 | `disable-num-keys` | Do not forward number keys to Total Commander (0/1) |
 | `disable-np-keys` | Do not forward N/P to Total Commander (0/1) |
 
-GUI translations are UTF-8 files in the `language` directory (`en.lng`,
-`de.lng`, `uk.lng`, and `ru.lng`). Missing files or individual translation
-keys always fall back to English from `en.lng`.
+GUI translations are UTF-8 files in the `language` directory. The value of
+`language` maps directly to `<code>.lng`, so adding `fr.lng` makes
+`language=fr` available without changing the plugin. Regional codes first try
+their complete name and then the base language (`fr-CA` -> `fr-ca.lng`, then
+`fr.lng`). `Auto` follows Total Commander's language when a matching catalog
+exists and otherwise uses the Windows UI language. The included catalogs are
+English (`en`), German (`de`), Czech (`cs`), Ukrainian (`uk`), and Russian
+(`ru`). Missing files or individual keys fall back to the complete English
+catalog built into the plugin.
 | `exit-by-q` | Forward Q as close/exit key to Total Commander (0/1) |
 
 All light- and dark-theme colours are configurable as RGB integers; see the
