@@ -1,5 +1,9 @@
 # csvtab (extended)
 
+![preview](CSV_Edit.png)
+
+![transform]CSV_Transformation.png)
+
 A [Total Commander](https://www.ghisler.com/) Lister (WLX) plugin to view,
 filter, search, **edit** and **transform** CSV / TSV / TAB files.
 
@@ -20,6 +24,10 @@ regular.
 
 * Detects ANSI, UTF-8, UTF-16LE and UTF-16BE, including BOM handling.
 * Detects common delimiters automatically: comma, semicolon, TAB, pipe and colon.
+* Honors an Excel-style first line such as `sep=;` (case-insensitive, optional
+  BOM, exactly one separator character). It overrides the INI delimiter and
+  automatic detection, stays hidden in every comment mode, and leaves the next
+  line available as the table header.
 * Supports quoted CSV, doubled quotes, multiline cells and empty trailing cells.
 * Detects the effective column count from a configurable sample and treats short
   preamble rows before the first full-width row as comments.
@@ -31,8 +39,17 @@ regular.
 ### Fast table view
 
 * Native owner-data ListView for large tables.
-* Lazy cell value decoding: only sampled values are decoded immediately; the
-  rest is decoded on demand and then in small background batches.
+* Fast initial loading with original file bytes and a quote-aware row index,
+  rather than allocating every cell in advance. A bounded row cache decodes
+  the cells needed for display and samples; it does not expand the whole table
+  in the background. Unusual encoding/parser cases retain the existing parser.
+* Filtering, stable natural sorting and transformation work directly with indexed
+  data. Single-column scans decode only the requested field, and sorting builds
+  its keys once rather than decoding values on every comparison.
+* The first edit or structural change builds the existing source-preserving
+  editable model. Large files can therefore take additional time and memory on
+  their first write operation. Quoting, BOM, encoding and line endings remain
+  preserved by the existing patch/save path.
 * Column widths are calculated before the grid is shown, so the first paint uses
   the final widths.
 * Optional line-number column sized from the largest visible row number.
@@ -56,6 +73,8 @@ regular.
 ### Navigate like a spreadsheet
 
 * Arrow keys move the current cell up, down, left and right.
+* **PgUp/PgDown** and arrow keys share the current row in either order;
+  paging keeps the current column.
 * At the visible window edge, the table scrolls by row or column as needed.
 * **Ctrl+Arrow** jumps to the first/last row or first/last visible column.
 * Hidden columns are skipped during horizontal navigation.
@@ -73,6 +92,10 @@ original file structure.
 * Delete a column from the header/context menu in Edit mode.
 * Save with **Ctrl+S**. Saving is atomic and preserves encoding, BOM, delimiter
   and comment handling as far as possible.
+* Selecting a delimiter in the status bar converts the current in-memory CSV,
+  preserves pending edits, updates an existing `sep=` line and adjusts quoting.
+  The file is written only on **Ctrl+S**. Transformation exports also update an
+  existing directive; neither operation adds one to a file that did not have it.
 * Dirty files are marked in the status bar and prompt before close or reload.
 
 ### Transform columns without touching the original
@@ -93,8 +116,10 @@ repeatable cleanup jobs can be saved and reused.
 
 ### Status bar control
 
-The status bar is interactive and reloads the document with the selected parser
-settings:
+The status bar is interactive. Encoding and comment options reload the file;
+manual delimiter choices convert the current document and mark it as modified.
+`Auto` keeps the current data and returns to automatic delimiter selection for
+future loads (an existing `sep=` directive always takes precedence):
 
 | Segment | Options |
 |---------|---------|
@@ -125,8 +150,22 @@ with decimal alignment:
 * floats using `.` and `,` are aligned at the decimal separator;
 * integer cells in mixed integer/float columns align directly before the decimal
   anchor;
-* pure integer columns are right-aligned;
+* integer cells share the column's numeric anchor;
 * nonnumeric columns keep normal text layout.
+
+Configured unit suffixes are recognized for **alignment only**. The default is:
+
+```ini
+numeric-units=%,kg,m,km/h,°,Hz,MHz
+```
+
+For example, `75%`, `12.5 MHz` and `-3,25 Hz` align their numeric part while
+keeping the suffix and its spacing. The list is comma-separated and
+case-sensitive (`MHz` is not `mHz`). Set `numeric-units=` to disable units, or
+`decimal-align=0` to disable numeric alignment entirely. Classification still
+uses `max-column-samples`. Data, copying, saving, filtering and sorting are
+unchanged; suffixed values retain natural text sorting, not unit conversion or
+guaranteed numeric ordering of decimal values.
 
 ---
 
@@ -210,6 +249,7 @@ Settings live in `csvtab.ini` next to the plugin. A few common options:
 | `filter-row` | Show the per-column filter row (0/1) |
 | `show-line-numbers` | Show the row-number column on the left (0/1) |
 | `decimal-align` | Align mixed integers/floats at the decimal position (0/1, default 1) |
+| `numeric-units` | Alignment-only suffixes, default `%,kg,m,km/h,°,Hz,MHz`; empty disables units |
 | `theme-mode` | `tc` follows Total Commander, `light`/`dark` force a fixed theme |
 | `dark-theme` | Legacy fallback when `theme-mode` is missing (0/1) |
 | `skip-comments` | 0 parse / 1 keep comment as one cell / 2 hide / 3 auto-hide leading comments and blank rows |
